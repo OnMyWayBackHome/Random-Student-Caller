@@ -5,32 +5,32 @@
 #include <MD_MAX72xx.h> //Driver for display
 #include <SPI.h>
 //#include "LowPower.h"
-
 #define CLASS_PIN 4 //pin for the pushbutton to change classes
 #define NEXT_PIN 2 //Pin to get next student
 #define CS_PIN 3  //control pin for the display
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4  //Number of 8x8 LED matrices
-#define SPEED_TIME  25
-#define PAUSE_TIME  1000
+#define DISPLAY_SCROLL_SPEED  50 //msec between frames
+#define DISPLAY_SCROLL_PAUSE_TIME  0
 MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES); //new instance of MD_Parola class with hardware SPI
 
 //Edit these variables to match your situation.
 const int maxClassSize = 12;  //Enter the number of students in the largest class
 const int numberOfClasses = 3; //How many classes
 const int numberOfStudents[] = {12, 10, 6}; //Enter the number of students in each class
-const char *classNames[] = {"Geo A", "Geo D", "C-Alg"};
+const char *classNames[] = {"Geo A", "Geo D", "C-Alg"}; //Abbreviate to < 8 characters to fit on display
 const char *classRosters[numberOfClasses][maxClassSize] = {
             {"Angie", "Jill", "Mairi", "Allie", "Jacey", "Jennifer", "Jojo", "Nozomi",
               "Lillian", "Erica", "Mehar", "Ada"},
             {"Ashlyn", "Guialem", "Sydney", "Sadie", "Raji", "Annie", "Tess", "Annika",
               "Olana", "Claire"}, 
-            {"MorganANA", "GraceBEHERE", "Sallie", "Esme", "Sophie", "Bella"},
+            {"Morgan", "Grace", "Sallie", "Esme", "Sophie", "Bella"},
           };
 
 void shuffleStudents(); //declare functions
 void changeClass();
 void getNextStudent();
+void wakeup();
 
 int shuffledIndexes[maxClassSize];
 int thisClass = numberOfClasses - 1;
@@ -51,11 +51,7 @@ void setup() {
   myDisplay.setTextAlignment(PA_CENTER);
   myDisplay.displayClear();
   myDisplay.displayReset();
-  //  delay(100);
   changeClass(); //go to the next class and display its name.
-}
-
-void wakeUp(){
 }
 
 void loop() {
@@ -105,10 +101,9 @@ void shuffleStudents() {
 }  
 
 void getNextStudent() {
-   thisStudent = (thisStudent + 1) % numberOfStudents[thisClass];
-  //for (int i = 0; i < numberOfStudents[thisClass]; i++) {
+  thisStudent = (thisStudent + 1) % numberOfStudents[thisClass];
   int del = 0;
-  for (int i = 0; i < 4 * numberOfStudents[thisClass]; i++) {
+  for (int i = 0; i < 40; i++) {
     int student = (thisStudent + i) % numberOfStudents[thisClass];
     myDisplay.print(classRosters[thisClass][student]);
     del = del + i/4;
@@ -119,20 +114,21 @@ void getNextStudent() {
     delay(200);
     myDisplay.setInvert(false);
     if (myDisplay.getTextColumns(classRosters[thisClass][shuffledIndexes[thisStudent]]) > MAX_DEVICES * 8) {
-      int name_length = strlen(classRosters[thisClass][shuffledIndexes[thisStudent]]);
-      for (int i = 0; i < 2; i++) {
-        myDisplay.print(classRosters[thisClass][shuffledIndexes[thisStudent]]);
-        delay(1200);
-        myDisplay.displayClear();
-        myDisplay.print(classRosters[thisClass][shuffledIndexes[thisStudent]] + (name_length - 8));
-        delay(800);
-        myDisplay.displayClear();
+      //If the name it too long to fit, scroll the name
+      myDisplay.displayClear();
+      myDisplay.displayText(classRosters[thisClass][shuffledIndexes[thisStudent]], PA_CENTER, DISPLAY_SCROLL_SPEED, DISPLAY_SCROLL_PAUSE_TIME, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
+      while(true) { //wait for animation to finish
+        if (myDisplay.displayAnimate()) {
+          myDisplay.displayReset();
+          break;
+        }
       }
-        myDisplay.setTextAlignment(PA_CENTER);
-        myDisplay.displayReset();
     } else {
       myDisplay.print(classRosters[thisClass][shuffledIndexes[thisStudent]]);
       delay(4000);
     }
     myDisplay.displayClear();
+}
+
+void wakeUp(){
 }
