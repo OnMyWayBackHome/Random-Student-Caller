@@ -4,10 +4,10 @@
 #include <MD_Parola.h>  //Library of nice functions for the display
 #include <MD_MAX72xx.h> //Driver for display
 #include <SPI.h>
-//#include "LowPower.h"
-#define CLASS_PIN 4 //pin for the pushbutton to change classes
+#include "LowPower.h"
+#define CLASS_PIN 3 //pin for the pushbutton to change classes
 #define NEXT_PIN 2 //Pin to get next student
-#define CS_PIN 3  //control pin for the display
+#define CS_PIN 4  //control pin for the display
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4  //Number of 8x8 LED matrices
 #define DISPLAY_SCROLL_SPEED  50 //msec between frames
@@ -30,7 +30,7 @@ const char *classRosters[numberOfClasses][maxClassSize] = {
 void shuffleStudents(); //declare functions
 void changeClass();
 void getNextStudent();
-void wakeup();
+void wakeUp();
 
 int shuffledIndexes[maxClassSize];
 int thisClass = numberOfClasses - 1;
@@ -55,31 +55,32 @@ void setup() {
 }
 
 void loop() {
-  do {
+  //go into low power mode and wait for a button to be pushed.
+  attachInterrupt(digitalPinToInterrupt(NEXT_PIN), wakeUp, LOW); //enable interrupts
+  attachInterrupt(digitalPinToInterrupt(CLASS_PIN), wakeUp, LOW);
+  LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF); 
+  detachInterrupt(digitalPinToInterrupt(CLASS_PIN));  //disable interrupts until after you deal with the first.
+  detachInterrupt(digitalPinToInterrupt(NEXT_PIN)); 
+  do { //read both buttons to see which has been pushed
     classPinUp = digitalRead(CLASS_PIN);
     nextPinUp = digitalRead(NEXT_PIN);
   } while (classPinUp and nextPinUp);
+ 
   if (!classPinUp) {
     changeClass();
   } else {
     getNextStudent();
   }
-
-/* 
-    //low power mode
-    attachInterrupt(digitalPinToInterrupt(NEXT_PIN), wakeUp, LOW);
-    LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF); 
-    detachInterrupt(digitalPinToInterrupt(NEXT_PIN)); 
-//   while (digitalRead(NEXT_PIN) == LOW) {}
-*/
 }
 
 void changeClass() {
   thisClass = (thisClass + 1) % numberOfClasses;
   shuffleStudents();
+  myDisplay.displayShutdown(false);
   myDisplay.print(classNames[thisClass]);
   delay(800);
   myDisplay.displayClear();
+  myDisplay.displayShutdown(true); //put into low power mode
 }
 
 void shuffleStudents() {
@@ -101,6 +102,7 @@ void shuffleStudents() {
 }  
 
 void getNextStudent() {
+  myDisplay.displayShutdown(false); //wake up display from low power mode
   thisStudent = (thisStudent + 1) % numberOfStudents[thisClass];
   int del = 0;
   for (int i = 0; i < 40; i++) {
@@ -128,6 +130,7 @@ void getNextStudent() {
       delay(4000);
     }
     myDisplay.displayClear();
+    myDisplay.displayShutdown(true); //put into low-power mode
 }
 
 void wakeUp(){
