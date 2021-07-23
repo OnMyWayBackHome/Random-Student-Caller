@@ -44,7 +44,7 @@ void setup() {
   pinMode(CLASS_PIN, INPUT_PULLUP);
   pinMode(CS_PIN, OUTPUT);
   startDisplay();
-  myDisplay.print("Derby"); //display my silly name for the random caller. "I didn't call on you. Derby did!"
+  myDisplay.print("Derby"); //display my silly name for the random caller. "I didn't call on you--Derby did!"
   while (digitalRead(CLASS_PIN)){} //wait for the button to be pressed so I can get a random time.
   randomSeed(millis());  //initialize my random number generator
   myDisplay.displayClear();

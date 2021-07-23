@@ -1,0 +1,4 @@
+The Onshape.com design files are here. 
+https://cad.onshape.com/documents/337f68dea539d0ff47f9a69e/w/9f015188c0101e4bf8c26567/e/201a0eb6de7f408907aaba4d
+
+You can edit the CAD file to fit your button, switches, and protoboard. Onshape is free for hobbyists and runs in a browser.
