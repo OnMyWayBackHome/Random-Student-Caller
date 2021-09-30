@@ -12,18 +12,18 @@
 #define MAX_DEVICES 4  //Number of 8x8 LED matrices
 #define DISPLAY_SCROLL_SPEED  50 //msec between frames
 #define DISPLAY_SCROLL_PAUSE_TIME  0
-#define DISPLAY_BRIGHTNESS 5 // The intensity (brightness) of the display (0-15):
+#define DISPLAY_BRIGHTNESS 3 // The intensity (brightness) of the display (0-15):
 MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES); //new instance of MD_Parola class with hardware SPI
 
 //Edit these variables to match your situation.
-const int maxClassSize = 9;  //Enter the number of students in the largest class
+const int maxClassSize = 14;  //Enter the number of students in the largest class
 const int numberOfClasses = 3; //How many classes
-const int numberOfStudents[] = {9, 7, 8}; //Enter the number of students in each class
-const char *classNames[] = {"Geo", "Calc C", "Calc D"}; //Abbreviate to < 8 characters to fit on display
+const int numberOfStudents[] = {14, 10, 5}; //Enter the number of students in each class
+const char *classNames[] = {"Geo", "Calc B", "Calc C"}; //Abbreviate to < 8 characters to fit on display
 const char *classRosters[numberOfClasses][maxClassSize] = {
-            {"Amy", "Bob", "Chris", "Dab", "Elle", "Fran", "Greg", "Hank","Inigo"},
-            {"Micky", "Daffy", "Minnie", "Bugs", "Sam", "Max", "Jessica"}, 
-            {"Al", "Bea", "Cal", "Doug", "Emma", "Fred", "Gail", "Hal"}
+            {"Anya", "Gabby", "Ally", "Jiaqi", "Ellie", "Punch", "Nicolette","Levi", "Liz", "Anjuli", "Sophia", "Ari", "Natalia", "Zorah"},
+            {"Tracy", "Jennie", "Dorothy", "Iren", "Portia", "Bailey", "Cat", "Simon", "Ava", "Hanshu" }, 
+            {"Riko", "Eunice", "Karina", "Tina", "Hanhee"}
           };
 
 void shuffleStudents(); //declare functions
@@ -39,7 +39,6 @@ int nextPinUp = false;
 int classPinUp = false;
 
 void setup() {
-  
   pinMode(NEXT_PIN, INPUT_PULLUP); //The pushbutton pin will have an internal resistor pulling the value high when not depressed
   pinMode(CLASS_PIN, INPUT_PULLUP);
   pinMode(CS_PIN, OUTPUT);
