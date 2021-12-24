@@ -1,0 +1,28 @@
+{
+    "deviceName": "Derby",
+    "classes": [
+        {
+            "name": "Geo",
+            "students": [
+                "Anya", "Gabby", "Ally", "Jiaqi", "Ellie","Punch", 
+                "Nicolette", "Levi", "Liz", 
+                "Anjuli", "Sofia", 
+                "Ari", 
+                "Zorah"
+            ]
+        },
+        {
+            "name": "Calc B",
+            "students": [
+                "Tracy", "Jennie", "Dorothy", "Iren", "Portia", 
+                "Bailey", "Cat", "Simon", "Ava", "Hanshu"
+            ]
+        },
+        {
+            "name": "Calc C",
+            "students": [
+                "Riko", "Eunice", "Karina", "Tina", "Hanhee"
+            ]
+        }
+    ]
+}
