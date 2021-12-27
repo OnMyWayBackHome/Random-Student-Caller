@@ -4,7 +4,7 @@
 #include <MD_Parola.h>  //Library of nice functions for the display
 #include <MD_MAX72xx.h> //Driver for display
 #include <SPI.h>
-#include "LowPower.h"
+//#include "LowPower.h"
 #include <SD.h> // SD card read/write ** MOSI - pin 11, ** MISO - pin 12, ** CLK - pin 13, ** CS - pin 10 
 //#include <Wire.h>
 #include <serialEEPROM.h>
@@ -44,13 +44,6 @@ bool nextPinUp = false;
 bool classPinUp = false;
 
 
-//const char *classRosters[3][maxClassSize] = {
- //           {"Anya", "Gabby", "Ally", "Jiaqi", "Ellie", "Punch", "Nicolette","Levi", "Liz", "Anjuli", "Sofia", "Ari", "Zorah"},
- //           {"Tracy", "Jennie", "Dorothy", "Iren", "Portia", "Bailey", "Cat", "Simon", "Ava", "Hanshu" }, 
- //           {"Riko", "Eunice", "Karina", "Tina", "Hanhee"}
- //         };
-
-
 void shuffleStudents(); //declare functions
 void startDisplay();
 void changeClass();
@@ -63,23 +56,6 @@ int readClassNamesFromEprom();
 int readLineFromSDWriteToEprom(File myFile, int maxLen, int addr); 
 void readStudentsInClass(int classNumber);
 
-#ifdef __arm__
-// should use uinstd.h to define sbrk but Due causes a conflict
-extern "C" char* sbrk(int incr);
-#else  // __ARM__
-extern char *__brkval;
-#endif  // __arm__
-
-int freeMemory() {
-  char top;
-#ifdef __arm__
-  return &top - reinterpret_cast<char*>(sbrk(0));
-#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
-  return &top - __brkval;
-#else  // __arm__
-  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
-#endif  // __arm__
-}
 MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN_LED_MATRIX, MAX_DEVICES); //new instance of MD_Parola class with hardware SPI 
 serialEEPROM myEEPROM(addrEEPROM, 32768, 64); //address; 256K bit = 32768 bytes; 64-Byte Page Write Buffer
 
@@ -88,16 +64,13 @@ void setup() {
   setPinModes();
   Serial.begin(9600);
   while (!Serial) {}
-  //Serial.print("displaying something");
+  Serial.print("displaying something");
   loadNewRoster();  //FIX TO LOAD ONLY IF BUTTON IS PRESSED ON STARTUP
   Serial.print("after loadnew roster: ");
-  Serial.println(freeMemory());
   readClassNamesFromEprom();
   Serial.print("after readClassNames: ");
-  Serial.println(freeMemory());
-startDisplay();
+  startDisplay();
   Serial.print("after startDisplay: ");
-  Serial.println(freeMemory());
   myDisplay.print("Derby"); //display my silly name for the random caller. "I didn't call on you--Derby did!"
   while (digitalRead(CLASS_PIN)){} //wait for the button to be pressed so I can get a random time.
   randomSeed(millis());  //initialize my random number generator
@@ -108,11 +81,13 @@ startDisplay();
 
 void loop() {
   //go into low power mode and wait for a button to be pushed.
+  /* 
   attachInterrupt(digitalPinToInterrupt(NEXT_PIN), wakeUp, LOW); //enable interrupts
   attachInterrupt(digitalPinToInterrupt(CLASS_PIN), wakeUp, LOW);
   LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF); 
   detachInterrupt(digitalPinToInterrupt(CLASS_PIN));  //disable interrupts until after you deal with the first.
   detachInterrupt(digitalPinToInterrupt(NEXT_PIN)); 
+  */
   do { //read both buttons to see which has been pushed
     classPinUp = digitalRead(CLASS_PIN);
     nextPinUp = digitalRead(NEXT_PIN);
@@ -129,8 +104,8 @@ void setPinModes(){
   pinMode(NEXT_PIN, INPUT_PULLUP); //The pushbutton pin will have an internal resistor pulling the value high when not depressed
   pinMode(CLASS_PIN, INPUT_PULLUP);
   pinMode(CS_PIN_LED_MATRIX, OUTPUT);
-  //pinMode(CS_PIN_SD_CARD, OUTPUT);
-  //digitalWrite(CS_PIN_SD_CARD, HIGH); // set Chip Select for the card reader to high to disable the SD Card Reader until needed
+  pinMode(CS_PIN_SD_CARD, OUTPUT);
+  digitalWrite(CS_PIN_SD_CARD, HIGH); // set Chip Select for the card reader to high to disable the SD Card Reader until needed
 }
 
 void startDisplay(){
@@ -203,10 +178,10 @@ void wakeUp(){
 void initializeSDCardReader(){
  //Serial.print("Initializing SD card...");
   if (!SD.begin()) {
-    //Serial.println("initialization failed!");
+    Serial.println("initialization failed!");
     while (1);
   }
-  //Serial.println("initialization done.");
+  Serial.println("initialization done.");
 }
 
 int readLineFromSDWriteToEprom(File myFile, int maxLen, int addr) {
@@ -238,7 +213,7 @@ void loadNewRoster(){
   File myFile;
   myFile = SD.open("roster.txt");
   if (!myFile) {
-    //Serial.println("error opening file on SD Card");    
+    Serial.println("error opening file on SD Card");    
     while(true) {}
   } 
   readLineFromSDWriteToEprom(myFile, 8, addrDeviceName); //read the device name Derby etc from the first line of the text file on the SD card
