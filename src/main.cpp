@@ -4,7 +4,7 @@
 #include <MD_Parola.h>  //Library of nice functions for the display
 #include <MD_MAX72xx.h> //Driver for display
 #include <SPI.h>
-//#include "LowPower.h"
+#include "LowPower.h"
 #include <SD.h> // SD card read/write ** MOSI - pin 11, ** MISO - pin 12, ** CLK - pin 13, ** CS - pin 10 
 //#include <Wire.h>
 #include <serialEEPROM.h>
@@ -81,13 +81,13 @@ void setup() {
 
 void loop() {
   //go into low power mode and wait for a button to be pushed.
-  /* 
+  
   attachInterrupt(digitalPinToInterrupt(NEXT_PIN), wakeUp, LOW); //enable interrupts
   attachInterrupt(digitalPinToInterrupt(CLASS_PIN), wakeUp, LOW);
   LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF); 
   detachInterrupt(digitalPinToInterrupt(CLASS_PIN));  //disable interrupts until after you deal with the first.
   detachInterrupt(digitalPinToInterrupt(NEXT_PIN)); 
-  */
+  
   do { //read both buttons to see which has been pushed
     classPinUp = digitalRead(CLASS_PIN);
     nextPinUp = digitalRead(NEXT_PIN);
@@ -239,9 +239,9 @@ void loadNewRoster(){
 
 void readStudentsInClass(int classNumber){
   for (byte i = 0; i < classSizes[classNumber]; i++) {
-    //Serial.print("Student: ");
+    Serial.print("Student: ");
     myEEPROM.read(addrStudentNames + i * 16 + classNumber * 512, (uint8_t*)studentNames[i], 16);
-    //Serial.println(studentNames[i]);
+    Serial.println(studentNames[i]);
   }
   return;
 }
@@ -253,21 +253,21 @@ int readClassNamesFromEprom(){
     while(true) {}
   }
   */
-  //Serial.print("Device name in nEEPROM: ");
+  Serial.print("Device name in nEEPROM: ");
   myEEPROM.read(addrDeviceName, (uint8_t*)deviceName, 8);
-  //Serial.println(deviceName);
+  Serial.println(deviceName);
 
   numberOfClasses = myEEPROM.read(addrNumberOfClasses);
-  //Serial.print("Number of Classes in EEPROM: ");
-  //Serial.println(numberOfClasses);
+  Serial.print("Number of Classes in EEPROM: ");
+  Serial.println(numberOfClasses);
   for (int i = 0; i < numberOfClasses; i++ ) {
-    //Serial.print("Class: ");
+    Serial.print("Class: ");
     myEEPROM.read(addrClassNames + i * 8, (uint8_t*)classNames[i], 8);
-    //Serial.println(classNames[i]);
+    Serial.println(classNames[i]);
 
     classSizes[i] = myEEPROM.read(addrClassSizes + i);
-    //Serial.print("Students in this class: ");
-    //Serial.println(classSizes[i]);
+    Serial.print("Students in this class: ");
+    Serial.println(classSizes[i]);
   }
   return  1;
 }
