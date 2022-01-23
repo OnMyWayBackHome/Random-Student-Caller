@@ -58,7 +58,8 @@ void readStudentsInClass(int classNumber);
 void wakeDisplay();
 void sleepDisplay();
 
-MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN_LED_MATRIX, MAX_DEVICES); //new instance of MD_Parola class with hardware SPI 
+MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, 5, 7, CS_PIN_LED_MATRIX, MAX_DEVICES);
+//MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN_LED_MATRIX, MAX_DEVICES); //hardware SPI is not reliable! I think it is too fast. 
 serialEEPROM myEEPROM(addrEEPROM, 32768, 64); //address; 256K bit = 32768 bytes; 64-Byte Page Write Buffer
 
 void setup() {
@@ -66,7 +67,9 @@ void setup() {
   Serial.begin(9600);
   while (!Serial) {}
   Serial.print("displaying something");
-  // loadNewRoster();  //FIX TO LOAD ONLY IF BUTTON IS PRESSED ON STARTUP
+  if (digitalRead(CLASS_PIN)==LOW) {
+    loadNewRoster();  //read a new roster from the microSD card only if the class pin is pressed during startup  
+  }
   Serial.println("after loadnew roster: ");
   readClassNamesFromEprom();
   Serial.println("after readClassNames: ");
