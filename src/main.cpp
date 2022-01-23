@@ -10,7 +10,7 @@
 #include <serialEEPROM.h>
 
 #define NEXT_PIN 2 //Pin to get next student
-#define CLASS_PIN 3 //pin for the pushbutton to change classes
+#define CLASS_PIN 11 //pin for the pushbutton to change classes
 #define CS_PIN_LED_MATRIX 4  //control pin for the display
 #define CS_PIN_SD_CARD 10 //chip select for the micro SD Card
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
@@ -20,9 +20,9 @@
 #define DISPLAY_BRIGHTNESS 3 // The intensity (brightness) of the display (0-15):
 
 
-const byte maxClassSize = 25;  
-const byte maxNumberOfClasses = 6;
-const byte maxNameSize = 12;
+const byte maxClassSize = 25;  //size of largest class that you anticipate
+const byte maxNumberOfClasses = 6;  
+const byte maxNameSize = 12;  //number of characters in the longest student name
 const int addrEEPROM = 0x50; //I2C Device Address 0x50 (A0 = GND, A1 = GND)
 const byte  addrVersionNumber = 0; //put code into eeprom to prompt for new data if no data is present or of data is of old format.
 const byte versionNumber = 0xD7; //current version number (random number)
@@ -32,13 +32,13 @@ const byte addrClassSizes = 0x10; //Start of array of 16 class sizes
 const int addrClassNames = 0x30;  
 const int addrStudentNames = 0x100; 
 
-byte numberOfClasses = 0; 
 char deviceName[8];
 byte classSizes[maxNumberOfClasses] ; //Enter the number of students in each class
 char classNames[maxNumberOfClasses][8]; //Abbreviate to < 8 characters to fit on display
 char studentNames[maxClassSize][maxNameSize];
 byte shuffledIndexes[maxClassSize];
-byte thisClass = numberOfClasses - 1;
+byte numberOfClasses = 0; 
+byte thisClass = 0;
 byte thisStudent = 0;
 bool nextPinUp = false;
 bool classPinUp = false;
@@ -55,27 +55,29 @@ void loadNewRoster();
 int readClassNamesFromEprom();
 int readLineFromSDWriteToEprom(File myFile, int maxLen, int addr); 
 void readStudentsInClass(int classNumber);
+void wakeDisplay();
+void sleepDisplay();
 
 MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN_LED_MATRIX, MAX_DEVICES); //new instance of MD_Parola class with hardware SPI 
 serialEEPROM myEEPROM(addrEEPROM, 32768, 64); //address; 256K bit = 32768 bytes; 64-Byte Page Write Buffer
-
 
 void setup() {
   setPinModes();
   Serial.begin(9600);
   while (!Serial) {}
   Serial.print("displaying something");
-  loadNewRoster();  //FIX TO LOAD ONLY IF BUTTON IS PRESSED ON STARTUP
-  Serial.print("after loadnew roster: ");
+  // loadNewRoster();  //FIX TO LOAD ONLY IF BUTTON IS PRESSED ON STARTUP
+  Serial.println("after loadnew roster: ");
   readClassNamesFromEprom();
-  Serial.print("after readClassNames: ");
+  Serial.println("after readClassNames: ");
   startDisplay();
-  Serial.print("after startDisplay: ");
+  Serial.println ("after startDisplay: ");
   myDisplay.print("Derby"); //display my silly name for the random caller. "I didn't call on you--Derby did!"
   while (digitalRead(CLASS_PIN)){} //wait for the button to be pressed so I can get a random time.
   randomSeed(millis());  //initialize my random number generator
   myDisplay.displayClear();
   changeClass(); //go to the next class and display its name.
+  Serial.println ("after changeClass ");
 
 }
 
@@ -94,8 +96,10 @@ void loop() {
   } while (classPinUp and nextPinUp);
  
   if (!classPinUp) {
+    Serial.println ("change Class button pressed ");
     changeClass();
   } else {
+    Serial.println ("next STudent button pressed ");
     getNextStudent();
   }
 }
@@ -112,20 +116,29 @@ void startDisplay(){
   myDisplay.begin();
   myDisplay.setIntensity(DISPLAY_BRIGHTNESS);  
   myDisplay.setTextAlignment(PA_CENTER);
+  wakeDisplay();
+}
+
+void wakeDisplay() {
+  myDisplay.displayShutdown(false);
   myDisplay.displayClear();
   myDisplay.displayReset();
-  myDisplay.displayShutdown(false);
+}
+
+void sleepDisplay() {
+  myDisplay.displayShutdown(true);
 }
 
 void changeClass() {
   thisClass = (thisClass + 1) % numberOfClasses;
   readStudentsInClass(thisClass);
   shuffleStudents();
-  myDisplay.displayShutdown(false);
+  wakeDisplay();
   myDisplay.print(classNames[thisClass]);
+  Serial.print("Class name displayed: ");
+  Serial.println(classNames[thisClass]);
   delay(800);
-  myDisplay.displayClear();
-  myDisplay.displayShutdown(true); //put into low power mode
+  sleepDisplay();
 }
 
 void shuffleStudents() {
@@ -141,17 +154,21 @@ void shuffleStudents() {
 }  
 
 void getNextStudent() {
-  myDisplay.displayShutdown(false); //wake up display from low power mode
+  wakeDisplay();
   thisStudent = (thisStudent + 1) % classSizes[thisClass];
   int del = 0;
   for (byte i = 0; i < 30; i++) {
     int student = (thisStudent + i) % classSizes[thisClass];
+    Serial.print("displaying ");
+    Serial.println (studentNames[student]);
     myDisplay.print(studentNames[student]);
     del = del + i/4;
     delay(del);
   }  
     myDisplay.setInvert(true);
     myDisplay.print(studentNames[shuffledIndexes[thisStudent]]);
+    Serial.print("Final student ");
+    Serial.println(studentNames[shuffledIndexes[thisStudent]]);
     delay(200);
     myDisplay.setInvert(false);
     if (myDisplay.getTextColumns(studentNames[shuffledIndexes[thisStudent]]) > MAX_DEVICES * 8) {
@@ -168,8 +185,7 @@ void getNextStudent() {
       myDisplay.print(studentNames[shuffledIndexes[thisStudent]]);
       delay(4000);
     }
-    myDisplay.displayClear();
-    myDisplay.displayShutdown(true); //put into low-power mode
+    sleepDisplay();
 }
 
 void wakeUp(){
@@ -219,10 +235,10 @@ void loadNewRoster(){
   readLineFromSDWriteToEprom(myFile, 8, addrDeviceName); //read the device name Derby etc from the first line of the text file on the SD card
   int currentClass = 0;
   while (myFile.available() && currentClass < maxNumberOfClasses){  
-    readLineFromSDWriteToEprom(myFile, 8, addrClassNames + currentClass * 8); // read the coures name and store it in the EEPROM
+    readLineFromSDWriteToEprom(myFile, 8, addrClassNames + currentClass * 8); // read the course name and store it in the EEPROM
     int currentStudent = 0;
     while (myFile.available() && currentStudent < maxClassSize){
-      int flag = readLineFromSDWriteToEprom(myFile, maxNameSize, addrStudentNames + currentClass * 512 + currentStudent * maxNameSize); //read student names
+      int flag = readLineFromSDWriteToEprom(myFile, maxNameSize, addrStudentNames + currentClass * maxClassSize * maxNameSize + currentStudent * maxNameSize); //read student names
       if(flag < 0){
         break;
       } else {
@@ -234,13 +250,14 @@ void loadNewRoster(){
   }
   myEEPROM.write(addrNumberOfClasses, currentClass);
   myFile.close();
+  digitalWrite(CS_PIN_SD_CARD, HIGH); // set Chip Select for the card reader to high to disable the SD Card Reader until needed
   return;
 }
 
 void readStudentsInClass(int classNumber){
   for (byte i = 0; i < classSizes[classNumber]; i++) {
     Serial.print("Student: ");
-    myEEPROM.read(addrStudentNames + i * 16 + classNumber * 512, (uint8_t*)studentNames[i], 16);
+    myEEPROM.read(addrStudentNames + classNumber * maxClassSize * maxNameSize + i * maxNameSize, (uint8_t*)studentNames[i], maxNameSize);
     Serial.println(studentNames[i]);
   }
   return;
@@ -258,6 +275,7 @@ int readClassNamesFromEprom(){
   Serial.println(deviceName);
 
   numberOfClasses = myEEPROM.read(addrNumberOfClasses);
+  thisClass = numberOfClasses;
   Serial.print("Number of Classes in EEPROM: ");
   Serial.println(numberOfClasses);
   for (int i = 0; i < numberOfClasses; i++ ) {
