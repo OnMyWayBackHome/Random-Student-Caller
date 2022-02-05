@@ -16,14 +16,14 @@
 MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES); //new instance of MD_Parola class with hardware SPI
 
 //Edit these variables to match your situation.
-const int maxClassSize = 9;  //Enter the number of students in the largest class
-const int numberOfClasses = 3; //How many classes
-const int numberOfStudents[] = {9, 7, 8}; //Enter the number of students in each class
-const char *classNames[] = {"Geo", "Calc C", "Calc D"}; //Abbreviate to < 8 characters to fit on display
+const int maxClassSize = 14;  //Enter the number of students in the largest class
+const int numberOfClasses = 2; //How many classes
+const int numberOfStudents[] = {14, 6}; //Enter the number of students in each class
+const char *classNames[] = {"Geo", "Calc"}; //Abbreviate to < 8 characters to fit on display
 const char *classRosters[numberOfClasses][maxClassSize] = {
-            {"Amy", "Bob", "Chris", "Dab", "Elle", "Fran", "Greg", "Hank","Inigo"},
-            {"Micky", "Daffy", "Minnie", "Bugs", "Sam", "Max", "Jessica"}, 
-            {"Al", "Bea", "Cal", "Doug", "Emma", "Fred", "Gail", "Hal"}
+            {"Jimena", "Maci", "Andrea", "Eli", "Ella", "Inci", "Elle", "Sophie","Lyra", "Kiki", "Elliana", "NataliaT","NataliaO","Nina"},
+            {"Isabella", "Sam", "Eaint", "Zara", "Cathy", "Preme"} 
+
           };
 
 void shuffleStudents(); //declare functions
