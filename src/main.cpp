@@ -9,15 +9,18 @@
 //#include <Wire.h>
 #include <serialEEPROM.h>
 
-#define NEXT_PIN 2 //Pin to get next student
-#define CLASS_PIN 11 //pin for the pushbutton to change classes
+#define NEXT_PIN 11 //Pin to get next student
+#define MOSI_PIN 5 //Data in for LED matrix
+#define SCK_PIN 7 //Clock pin for LED matrix
+#define CLASS_PIN 3 //pin for the pushbutton to change classes
 #define CS_PIN_LED_MATRIX 4  //control pin for the display
 #define CS_PIN_SD_CARD 10 //chip select for the micro SD Card
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4  //Number of 8x8 LED matrices
 #define DISPLAY_SCROLL_SPEED  50 //msec between frames
 #define DISPLAY_SCROLL_PAUSE_TIME  0
-#define DISPLAY_BRIGHTNESS 3 // The intensity (brightness) of the display (0-15):
+#define DISPLAY_BRIGHTNESS 3 // The intensity (brightness) of the display (0-15)
+#define TEST_LED_PIN 12
 
 
 const byte maxClassSize = 25;  //size of largest class that you anticipate
@@ -58,29 +61,29 @@ void readStudentsInClass(int classNumber);
 void wakeDisplay();
 void sleepDisplay();
 
-MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, 5, 7, CS_PIN_LED_MATRIX, MAX_DEVICES);
+MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, MOSI_PIN, SCK_PIN, CS_PIN_LED_MATRIX, MAX_DEVICES);
 //MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN_LED_MATRIX, MAX_DEVICES); //hardware SPI is not reliable! I think it is too fast. 
 serialEEPROM myEEPROM(addrEEPROM, 32768, 64); //address; 256K bit = 32768 bytes; 64-Byte Page Write Buffer
 
 void setup() {
   setPinModes();
-  Serial.begin(9600);
-  while (!Serial) {}
-  Serial.print("displaying something");
+  //Serial.begin(9600);
+ // while (!Serial) {}
+  //Serial.print("displaying something");
   if (digitalRead(CLASS_PIN)==LOW) {
     loadNewRoster();  //read a new roster from the microSD card only if the class pin is pressed during startup  
   }
-  Serial.println("after loadnew roster: ");
+  //Serial.println("after loadnew roster: ");
   readClassNamesFromEprom();
-  Serial.println("after readClassNames: ");
+  //Serial.println("after readClassNames: ");
   startDisplay();
-  Serial.println ("after startDisplay: ");
+  //Serial.println ("after startDisplay: ");
   myDisplay.print("Derby"); //display my silly name for the random caller. "I didn't call on you--Derby did!"
   while (digitalRead(CLASS_PIN)){} //wait for the button to be pressed so I can get a random time.
   randomSeed(millis());  //initialize my random number generator
   myDisplay.displayClear();
   changeClass(); //go to the next class and display its name.
-  Serial.println ("after changeClass ");
+  //Serial.println ("after changeClass ");
 
 }
 
@@ -99,10 +102,10 @@ void loop() {
   } while (classPinUp and nextPinUp);
  
   if (!classPinUp) {
-    Serial.println ("change Class button pressed ");
+    //Serial.println ("change Class button pressed ");
     changeClass();
   } else {
-    Serial.println ("next STudent button pressed ");
+    //Serial.println ("next Student button pressed ");
     getNextStudent();
   }
 }
@@ -112,6 +115,7 @@ void setPinModes(){
   pinMode(CLASS_PIN, INPUT_PULLUP);
   pinMode(CS_PIN_LED_MATRIX, OUTPUT);
   pinMode(CS_PIN_SD_CARD, OUTPUT);
+  pinMode(TEST_LED_PIN, OUTPUT);
   digitalWrite(CS_PIN_SD_CARD, HIGH); // set Chip Select for the card reader to high to disable the SD Card Reader until needed
 }
 
@@ -138,8 +142,8 @@ void changeClass() {
   shuffleStudents();
   wakeDisplay();
   myDisplay.print(classNames[thisClass]);
-  Serial.print("Class name displayed: ");
-  Serial.println(classNames[thisClass]);
+  //Serial.print("Class name displayed: ");
+  //Serial.println(classNames[thisClass]);
   delay(800);
   sleepDisplay();
 }
@@ -162,16 +166,16 @@ void getNextStudent() {
   int del = 0;
   for (byte i = 0; i < 30; i++) {
     int student = (thisStudent + i) % classSizes[thisClass];
-    Serial.print("displaying ");
-    Serial.println (studentNames[student]);
+    //Serial.print("displaying ");
+    //Serial.println (studentNames[student]);
     myDisplay.print(studentNames[student]);
     del = del + i/4;
     delay(del);
   }  
     myDisplay.setInvert(true);
     myDisplay.print(studentNames[shuffledIndexes[thisStudent]]);
-    Serial.print("Final student ");
-    Serial.println(studentNames[shuffledIndexes[thisStudent]]);
+    //Serial.print("Final student ");
+    //Serial.println(studentNames[shuffledIndexes[thisStudent]]);
     delay(200);
     myDisplay.setInvert(false);
     if (myDisplay.getTextColumns(studentNames[shuffledIndexes[thisStudent]]) > MAX_DEVICES * 8) {
@@ -197,10 +201,10 @@ void wakeUp(){
 void initializeSDCardReader(){
  //Serial.print("Initializing SD card...");
   if (!SD.begin()) {
-    Serial.println("initialization failed!");
+    //Serial.println("initialization failed!");
     while (1);
   }
-  Serial.println("initialization done.");
+  //Serial.println("initialization done.");
 }
 
 int readLineFromSDWriteToEprom(File myFile, int maxLen, int addr) {
@@ -232,7 +236,7 @@ void loadNewRoster(){
   File myFile;
   myFile = SD.open("roster.txt");
   if (!myFile) {
-    Serial.println("error opening file on SD Card");    
+    //Serial.println("error opening file on SD Card");    
     while(true) {}
   } 
   readLineFromSDWriteToEprom(myFile, 8, addrDeviceName); //read the device name Derby etc from the first line of the text file on the SD card
@@ -259,9 +263,9 @@ void loadNewRoster(){
 
 void readStudentsInClass(int classNumber){
   for (byte i = 0; i < classSizes[classNumber]; i++) {
-    Serial.print("Student: ");
+    //Serial.print("Student: ");
     myEEPROM.read(addrStudentNames + classNumber * maxClassSize * maxNameSize + i * maxNameSize, (uint8_t*)studentNames[i], maxNameSize);
-    Serial.println(studentNames[i]);
+    //Serial.println(studentNames[i]);
   }
   return;
 }
@@ -273,22 +277,22 @@ int readClassNamesFromEprom(){
     while(true) {}
   }
   */
-  Serial.print("Device name in nEEPROM: ");
+  //Serial.print("Device name in nEEPROM: ");
   myEEPROM.read(addrDeviceName, (uint8_t*)deviceName, 8);
-  Serial.println(deviceName);
+  //Serial.println(deviceName);
 
   numberOfClasses = myEEPROM.read(addrNumberOfClasses);
   thisClass = numberOfClasses;
-  Serial.print("Number of Classes in EEPROM: ");
-  Serial.println(numberOfClasses);
+  //Serial.print("Number of Classes in EEPROM: ");
+  //Serial.println(numberOfClasses);
   for (int i = 0; i < numberOfClasses; i++ ) {
-    Serial.print("Class: ");
+    //Serial.print("Class: ");
     myEEPROM.read(addrClassNames + i * 8, (uint8_t*)classNames[i], 8);
-    Serial.println(classNames[i]);
+    //Serial.println(classNames[i]);
 
     classSizes[i] = myEEPROM.read(addrClassSizes + i);
-    Serial.print("Students in this class: ");
-    Serial.println(classSizes[i]);
+    //Serial.print("Students in this class: ");
+    //Serial.println(classSizes[i]);
   }
   return  1;
 }
